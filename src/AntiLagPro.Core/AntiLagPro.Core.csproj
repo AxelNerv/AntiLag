@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- net8.0-windows нужен для Registry и будущего WPF; у тебя этот runtime уже стоит -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>AntiLagPro.Core</AssemblyName>
+    <RootNamespace>AntiLagPro.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Доступ к реестру (HKLM) на net8.0-windows -->
+    <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>
