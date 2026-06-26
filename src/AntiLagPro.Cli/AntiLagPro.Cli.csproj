@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>antilag</AssemblyName>
+    <RootNamespace>AntiLagPro.Cli</RootNamespace>
+    <!-- Манифест: требуем запуск от администратора -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AntiLagPro.Core\AntiLagPro.Core.csproj" />
+  </ItemGroup>
+
+</Project>
