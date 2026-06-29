@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private System.Windows.Forms.NotifyIcon? _tray;
     private bool _exiting;
     private bool _initializing = true;
+    private readonly bool _startHidden = Environment.GetCommandLineArgs()
+        .Any(a => string.Equals(a, "--autostart", StringComparison.OrdinalIgnoreCase));
 
     private IEnumerable<TweakRow> AllRows => _rows.Concat(_gameRows);
 
@@ -96,6 +98,18 @@ public partial class MainWindow : Window
         _exiting = true;
         if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
         System.Windows.Application.Current.Shutdown();
+    }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        // При автозапуске с Windows не показываем окно — сразу прячемся в трей,
+        // фон держит 0.5 ms. Открыть можно из меню трея.
+        if (_startHidden)
+        {
+            Hide();
+            ShowInTaskbar = false;
+        }
     }
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)

@@ -274,7 +274,7 @@
         <!-- Заголовок -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,12">
             <TextBlock Text="AntiLag" FontSize="24" FontWeight="Bold"/>
-            <TextBlock Text="v0.3.3" Foreground="#FF565E6E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,5"/>
+            <TextBlock Text="v0.3.4" Foreground="#FF565E6E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,5"/>
         </StackPanel>
 
         <!-- Статус-бар -->
@@ -766,7 +766,7 @@
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <TextBlock Text="AntiLag" FontWeight="Bold" FontSize="16"/>
-                                    <TextBlock Text="v0.3.3" Foreground="#FF858E9E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,2"/>
+                                    <TextBlock Text="v0.3.4" Foreground="#FF858E9E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,2"/>
                                 </StackPanel>
                                 <TextBlock Foreground="#FF858E9E" TextWrapping="Wrap"
                                            Text="Снижает задержки и держит таймер 0.5 ms. Лечит причину, диагностирует железо и сеть, откатывает изменения в один клик. Работает строго в user-mode (безопасно для анти-читов)."/>
