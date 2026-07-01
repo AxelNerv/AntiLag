@@ -35,9 +35,20 @@ public partial class MainWindow : Window
     private static readonly Brush Yellow = new SolidColorBrush(Color.FromRgb(0xD9, 0xA5, 0x3A));
     private static readonly Brush Red    = new SolidColorBrush(Color.FromRgb(0xD6, 0x45, 0x45));
 
+    private bool _hiddenOnce;
+
     public MainWindow()
     {
         InitializeComponent();
+
+        // Автозапуск: рисуем окно ЗА экраном (иначе на старте Windows первая
+        // отрисовка WPF выходит чёрной). Спрячем в трей уже после первого рендера.
+        if (_startHidden)
+        {
+            WindowStartupLocation = WindowStartupLocation.Manual;
+            Left = -32000; Top = -32000;
+            ShowInTaskbar = false;
+        }
 
         TweaksItems.ItemsSource = _rows;
         GameTweaksItems.ItemsSource = _gameRows;
@@ -100,15 +111,18 @@ public partial class MainWindow : Window
         System.Windows.Application.Current.Shutdown();
     }
 
-    protected override void OnSourceInitialized(EventArgs e)
+    protected override void OnContentRendered(EventArgs e)
     {
-        base.OnSourceInitialized(e);
-        // При автозапуске с Windows не показываем окно — сразу прячемся в трей,
-        // фон держит 0.5 ms. Открыть можно из меню трея.
-        if (_startHidden)
+        base.OnContentRendered(e);
+        // Окно уже один раз отрисовалось за экраном (поверхность корректна) —
+        // теперь прячем в трей и возвращаем позицию на центр для будущих показов.
+        if (_startHidden && !_hiddenOnce)
         {
+            _hiddenOnce = true;
             Hide();
             ShowInTaskbar = false;
+            Left = Math.Max(0, (SystemParameters.PrimaryScreenWidth - Width) / 2);
+            Top = Math.Max(0, (SystemParameters.PrimaryScreenHeight - Height) / 2);
         }
     }
 

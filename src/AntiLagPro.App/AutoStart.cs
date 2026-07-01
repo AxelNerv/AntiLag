@@ -63,6 +63,7 @@ $@"<?xml version=""1.0"" encoding=""UTF-16""?>
   <Triggers>
     <LogonTrigger>
       <Enabled>true</Enabled>
+      <Delay>PT6S</Delay>
     </LogonTrigger>
   </Triggers>
   <Principals>
