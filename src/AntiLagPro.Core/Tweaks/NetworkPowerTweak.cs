@@ -25,6 +25,16 @@ public sealed class NetworkPowerTweak : ITweak
     private static IEnumerable<string> NicSubkeys(RegistryKey root)
         => root.GetSubKeyNames().Where(n => Regex.IsMatch(n, @"^\d{4}$"));
 
+    /// <summary>
+    /// Только ФИЗИЧЕСКИЕ адаптеры (бит NCF_PHYSICAL = 0x4 в Characteristics).
+    /// Виртуальные (WAN Miniport, Hyper-V, Radmin VPN) исключаем: Hyper-V-адаптер
+    /// пересоздаётся при загрузке и сбрасывает PnPCapabilities, из-за чего тумблер
+    /// ложно показывал «выкл» после перезапуска.
+    /// </summary>
+    private static bool IsPhysical(RegistryKey? k)
+        => k?.GetValue("NetCfgInstanceId") is not null
+           && k.GetValue("Characteristics") is int c && (c & 0x4) != 0;
+
     public bool IsApplied()
     {
         using var root = Registry.LocalMachine.OpenSubKey(ClassKey);
@@ -33,9 +43,9 @@ public sealed class NetworkPowerTweak : ITweak
         foreach (var sub in NicSubkeys(root))
         {
             using var k = root.OpenSubKey(sub);
-            if (k?.GetValue("NetCfgInstanceId") is null) continue; // только реальные адаптеры
+            if (!IsPhysical(k)) continue; // только физические адаптеры
             any = true;
-            int pnp = k.GetValue("PnPCapabilities") is int v ? v : 0;
+            int pnp = k!.GetValue("PnPCapabilities") is int v ? v : 0;
             if ((pnp & 0x10) == 0) return false; // хоть один ещё разрешает усыпление
         }
         return any;
@@ -50,8 +60,8 @@ public sealed class NetworkPowerTweak : ITweak
         foreach (var sub in NicSubkeys(root))
         {
             using var k = root.OpenSubKey(sub, writable: true);
-            if (k?.GetValue("NetCfgInstanceId") is null) continue;
-            object? old = k.GetValue("PnPCapabilities");
+            if (!IsPhysical(k)) continue;
+            object? old = k!.GetValue("PnPCapabilities");
             slot[sub] = old is null ? "none" : old.ToString();
             k.SetValue("PnPCapabilities", 24, RegistryValueKind.DWord); // 0x18
         }
