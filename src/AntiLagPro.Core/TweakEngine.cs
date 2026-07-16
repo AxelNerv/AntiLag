@@ -38,6 +38,9 @@ public sealed class TweakEngine
             new NicLatencyTweak(),
             new DynamicTickTweak(),
             new InputQueueTweak(),
+            new MouseAccelTweak(),
+            new GameModeTweak(),
+            new HagsTweak(),
         };
     }
 
