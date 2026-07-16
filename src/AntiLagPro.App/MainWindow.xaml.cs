@@ -75,6 +75,27 @@ public partial class MainWindow : Window
         Closed += (_, _) => { _meter.Stop(); _monitor.Stop(); _engine.Timer.Stop(); };
         InitTray();
         _initializing = false;
+        _ = CheckUpdatesAsync();
+    }
+
+    // --- Проверка обновлений (GitHub Releases) ---
+    private string? _updateUrl;
+
+    private async Task CheckUpdatesAsync()
+    {
+        var cur = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0);
+        var upd = await UpdateChecker.Check(cur);
+        if (upd is null) return;
+        _updateUrl = upd.Url;
+        UpdateButton.Content = $"Доступна v{upd.Latest.ToString(3)} — скачать";
+        UpdateButton.Visibility = Visibility.Visible;
+    }
+
+    private void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (_updateUrl is null) return;
+        try { Process.Start(new ProcessStartInfo(_updateUrl) { UseShellExecute = true }); }
+        catch { }
     }
 
     // --- Трей-режим ---
