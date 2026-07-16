@@ -34,6 +34,10 @@ public sealed class TweakEngine
             new SystemResponsivenessTweak(),
             new NagleTweak(),
             new PowerThrottlingTweak(),
+            new MmcssGamesTweak(),
+            new NicLatencyTweak(),
+            new DynamicTickTweak(),
+            new InputQueueTweak(),
         };
     }
 

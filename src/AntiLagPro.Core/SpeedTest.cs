@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Http;
-using System.Net.NetworkInformation;
+using System.Net.Sockets;
 
 namespace AntiLagPro.Core;
 
@@ -106,20 +107,34 @@ public static class SpeedTest
         _                      => $"https://speedtest.selectel.ru/empty.php?r={Guid.NewGuid():N}"
     };
 
+    // TCP-connect пинг до сервера замера. Имя резолвим ЗАРАНЕЕ (обычный DNS,
+    // мимо туннеля), а коннектимся уже по IP — иначе DNS через TUN отваливается,
+    // а ICMP через gvisor даёт ложные 0. По IP проходит и в туннеле.
     private static long PingMs(SpeedServer s)
     {
-        string host = s == SpeedServer.Cloudflare ? "1.1.1.1" : "speedtest.selectel.ru";
-        try
+        string host = s == SpeedServer.Cloudflare ? "speed.cloudflare.com" : "speedtest.selectel.ru";
+        IPAddress? ip = null;
+        try { ip = Dns.GetHostAddresses(host).FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork); }
+        catch { }
+        if (ip is null) return -1;
+
+        long best = -1;
+        for (int i = 0; i < 3; i++)
         {
-            using var p = new Ping();
-            long sum = 0; int ok = 0;
-            for (int i = 0; i < 3; i++)
+            try
             {
-                var r = p.Send(host, 1500);
-                if (r.Status == IPStatus.Success) { sum += r.RoundtripTime; ok++; }
+                var sw = Stopwatch.StartNew();
+                using var tcp = new TcpClient();
+                var t = tcp.ConnectAsync(ip, 443);
+                if (t.Wait(3000) && tcp.Connected)
+                {
+                    sw.Stop();
+                    long ms = sw.ElapsedMilliseconds;
+                    if (best < 0 || ms < best) best = ms;
+                }
             }
-            return ok > 0 ? sum / ok : -1;
+            catch { }
         }
-        catch { return -1; }
+        return best;
     }
 }
