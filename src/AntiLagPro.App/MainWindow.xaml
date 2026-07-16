@@ -93,6 +93,84 @@
             </Setter>
         </Style>
 
+        <!-- Сегментированный переключатель (пилюли) -->
+        <Style x:Key="Seg" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#FF858E9E"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="b" Background="#FF1E1E26" CornerRadius="7" Padding="14,7" Margin="0,0,6,0">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="b" Property="Background" Value="#FF262630"/></Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="b" Property="Background" Value="#FF1F9E58"/>
+                                <Setter Property="Foreground" Value="#FFEDEFF2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Тёмный ComboBox под тему -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="#FFE3E6EB"/>
+            <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="ci" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ci" Property="Background" Value="#FF1E1E26"/></Trigger>
+                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="ci" Property="Background" Value="#FF1F9E58"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="#FFE3E6EB"/>
+            <Setter Property="Background" Value="#FF0A0A0E"/>
+            <Setter Property="BorderBrush" Value="#FF262630"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="cbd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6"/>
+                            <ToggleButton Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton"><Border Background="Transparent"/></ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="10,0,28,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                            <TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="9"
+                                       Foreground="#FF858E9E" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,12,0" IsHitTestVisible="False"/>
+                            <Popup IsOpen="{TemplateBinding IsDropDownOpen}" Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Fade">
+                                <Border Background="#FF15151B" BorderBrush="#FF262630" BorderThickness="1" CornerRadius="6" Margin="0,4,0,4"
+                                        MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}" MaxHeight="280">
+                                    <ScrollViewer><ItemsPresenter/></ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="cbd" Property="Background" Value="#FF12121A"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- Тонкий скроллбар в тон тёмной теме -->
         <Style x:Key="ThinThumb" TargetType="Thumb">
             <Setter Property="Template">
@@ -274,7 +352,7 @@
         <!-- Заголовок -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,12">
             <TextBlock Text="AntiLag" FontSize="24" FontWeight="Bold"/>
-            <TextBlock Text="v0.3.5" Foreground="#FF565E6E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,5"/>
+            <TextBlock Text="v0.4.2" Foreground="#FF565E6E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,5"/>
         </StackPanel>
 
         <!-- Статус-бар -->
@@ -396,7 +474,7 @@
                                                 <TextBlock x:Name="SpeedStatus" Text="многопоточный замер — точнее браузера" Foreground="#FF858E9E" FontSize="11" Margin="0,2,0,0"/>
                                             </StackPanel>
                                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                                                <ComboBox x:Name="SpeedServerCombo" Width="150" Margin="0,0,8,0">
+                                                <ComboBox x:Name="SpeedServerCombo" Width="160" Margin="0,0,8,0">
                                                     <ComboBoxItem Content="Selectel (RU)" Tag="selectel" IsSelected="True"/>
                                                     <ComboBoxItem Content="Cloudflare (глобал)" Tag="cf"/>
                                                 </ComboBox>
@@ -766,7 +844,7 @@
                             <StackPanel>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                                     <TextBlock Text="AntiLag" FontWeight="Bold" FontSize="16"/>
-                                    <TextBlock Text="v0.3.5" Foreground="#FF858E9E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,2"/>
+                                    <TextBlock Text="v0.4.2" Foreground="#FF858E9E" FontSize="12" VerticalAlignment="Bottom" Margin="6,0,0,2"/>
                                 </StackPanel>
                                 <TextBlock Foreground="#FF858E9E" TextWrapping="Wrap"
                                            Text="Снижает задержки и держит таймер 0.5 ms. Лечит причину, диагностирует железо и сеть, откатывает изменения в один клик. Работает строго в user-mode (безопасно для анти-читов)."/>

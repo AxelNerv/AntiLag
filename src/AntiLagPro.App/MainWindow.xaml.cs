@@ -176,8 +176,7 @@ public partial class MainWindow : Window
             MonLoss.Text     = $"{_monitor.LossPercent:N1} %";
             MonJitter.Text   = $"{_monitor.Jitter:N0} мс";
             MonPeaks.Text    = _monitor.Peaks.ToString();
-            var c = LevelColor(_monitor.StatusLevel);
-            MonStatus.Foreground = c;
+            MonStatus.Foreground = LevelColor(_monitor.StatusLevel);
             MonStatusPill.Background = LevelPill(_monitor.StatusLevel);
         }
 
