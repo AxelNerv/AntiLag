@@ -68,6 +68,7 @@ public partial class MainWindow : Window
         HoldTimerCheck.IsChecked = true;
         AutoStartCheck.IsChecked = AutoStart.IsEnabled();
         MinTrayCheck.IsChecked = Settings.MinimizeToTray;
+        AutoUpdateCheck.IsChecked = Settings.AutoUpdate;
 
         _uiTimer.Tick += (_, _) => UpdateStatus();
         _uiTimer.Start();
@@ -183,25 +184,89 @@ public partial class MainWindow : Window
         if (NavList.SelectedIndex >= 0) Nav.SelectedIndex = NavList.SelectedIndex;
     }
 
-    // --- Проверка обновлений (GitHub Releases) ---
-    private string? _updateUrl;
+    // --- Обновления (GitHub Releases) ---
+    private UpdateInfo? _update;
+    private string? _readyExe;      // скачанный файл, готовый к установке
+    private bool _updateBusy;
 
     private async Task CheckUpdatesAsync()
     {
+        UpdateChecker.CleanupOld();   // подчистить файл прошлой версии
+
         var cur = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0);
         var upd = await UpdateChecker.Check(cur);
         if (upd is null) return;
-        _updateUrl = upd.Url;
-        UpdateButton.Content = $"Доступна v{upd.Latest.ToString(3)} — скачать";
+
+        _update = upd;
+        UpdateButton.Content = $"Обновить до v{upd.Latest.ToString(3)}";
         UpdateButton.Visibility = Visibility.Visible;
+
+        // авто-режим: тихо качаем в фоне, ставим — по кнопке (чтобы не прерывать игру)
+        if (Settings.AutoUpdate && upd.AssetUrl is not null)
+            await DownloadUpdateAsync(silent: true);
     }
 
-    private void Update_Click(object sender, RoutedEventArgs e)
+    private async Task<bool> DownloadUpdateAsync(bool silent)
     {
-        if (_updateUrl is null) return;
-        try { Process.Start(new ProcessStartInfo(_updateUrl) { UseShellExecute = true }); }
-        catch { }
+        if (_update is null || _updateBusy) return false;
+        _updateBusy = true;
+        var progress = new Progress<double>(p =>
+            UpdateButton.Content = $"Загрузка {p:N0}%");
+        try
+        {
+            _readyExe = await UpdateChecker.Download(_update, silent ? null : progress);
+            if (_readyExe is null)
+            {
+                UpdateButton.Content = $"Обновить до v{_update.Latest.ToString(3)}";
+                if (!silent) MessageBox.Show(this, "Не удалось скачать обновление. Попробуй позже или скачай вручную с GitHub.",
+                                             "AntiLag", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            UpdateButton.Content = $"Установить v{_update.Latest.ToString(3)}";
+            if (silent)
+                _tray?.ShowBalloonTip(5000, "AntiLag",
+                    $"Обновление v{_update.Latest.ToString(3)} загружено. Нажми «Установить» в программе.",
+                    System.Windows.Forms.ToolTipIcon.Info);
+            return true;
+        }
+        finally { _updateBusy = false; }
     }
+
+    private async void Update_Click(object sender, RoutedEventArgs e)
+    {
+        if (_update is null || _updateBusy) return;
+
+        // ещё не скачано — качаем по кнопке
+        if (_readyExe is null)
+        {
+            UpdateButton.IsEnabled = false;
+            bool ok = await DownloadUpdateAsync(silent: false);
+            UpdateButton.IsEnabled = true;
+            if (!ok) return;
+        }
+
+        var answer = MessageBox.Show(this,
+            $"Установить обновление v{_update.Latest.ToString(3)}?\n\nПрограмма закроется и запустится заново.",
+            "AntiLag", MessageBoxButton.OKCancel, MessageBoxImage.Question);
+        if (answer != MessageBoxResult.OK) return;
+
+        if (UpdateChecker.ApplyAndRestart(_readyExe!))
+        {
+            _exiting = true;
+            if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
+            System.Windows.Application.Current.Shutdown();
+        }
+        else
+        {
+            MessageBox.Show(this, "Не удалось заменить файл программы. Скачай новую версию вручную с GitHub.",
+                            "AntiLag", MessageBoxButton.OK, MessageBoxImage.Warning);
+            try { Process.Start(new ProcessStartInfo(_update.PageUrl) { UseShellExecute = true }); } catch { }
+        }
+    }
+
+    private void AutoUpdate_Checked(object sender, RoutedEventArgs e) { if (!_initializing) Settings.AutoUpdate = true; }
+    private void AutoUpdate_Unchecked(object sender, RoutedEventArgs e) { if (!_initializing) Settings.AutoUpdate = false; }
 
     // --- Трей-режим ---
     private void InitTray()

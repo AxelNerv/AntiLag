@@ -953,8 +953,12 @@
                                            Text="Чтобы держать таймер 0.5 ms всегда, программа должна быть запущена. С автозапуском это происходит само."/>
                                 <CheckBox x:Name="MinTrayCheck" Content="Сворачивать в трей при закрытии"
                                           Foreground="#FFFAFAFA" Checked="MinTray_Checked" Unchecked="MinTray_Unchecked"/>
-                                <TextBlock Foreground="#FFA1A1AA" FontSize="11" TextWrapping="Wrap" Margin="22,4,0,0"
+                                <TextBlock Foreground="#FFA1A1AA" FontSize="11" TextWrapping="Wrap" Margin="22,4,0,12"
                                            Text="Крестик сворачивает в трей (значок у часов) — программа продолжает держать 0.5 ms в фоне. Выход — через меню трея."/>
+                                <CheckBox x:Name="AutoUpdateCheck" Content="Загружать обновления автоматически"
+                                          Foreground="#FFFAFAFA" Checked="AutoUpdate_Checked" Unchecked="AutoUpdate_Unchecked"/>
+                                <TextBlock Foreground="#FFA1A1AA" FontSize="11" TextWrapping="Wrap" Margin="22,4,0,0"
+                                           Text="Новая версия скачивается в фоне, а установка — по кнопке вверху, чтобы программа не перезапустилась во время игры."/>
                             </StackPanel>
                         </Border>
 

@@ -22,6 +22,21 @@ internal static class Settings
         }
     }
 
+    /// <summary>Скачивать обновления автоматически (по умолчанию ДА).</summary>
+    public static bool AutoUpdate
+    {
+        get
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(KeyPath);
+            return !(k?.GetValue("AutoUpdate") is int v && v == 0);
+        }
+        set
+        {
+            using var k = Registry.CurrentUser.CreateSubKey(KeyPath);
+            k.SetValue("AutoUpdate", value ? 1 : 0, RegistryValueKind.DWord);
+        }
+    }
+
     /// <summary>Акцентный цвет в виде #RRGGBB (пусто = цвет по умолчанию).</summary>
     public static string? AccentHex
     {
