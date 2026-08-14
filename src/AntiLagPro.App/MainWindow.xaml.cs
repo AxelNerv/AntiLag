@@ -31,9 +31,10 @@ public partial class MainWindow : Window
 
     private IEnumerable<TweakRow> AllRows => _rows.Concat(_gameRows);
 
-    private static readonly Brush Green  = new SolidColorBrush(Color.FromRgb(0x1F, 0x9E, 0x58));
-    private static readonly Brush Yellow = new SolidColorBrush(Color.FromRgb(0xD9, 0xA5, 0x3A));
-    private static readonly Brush Red    = new SolidColorBrush(Color.FromRgb(0xD6, 0x45, 0x45));
+    // Статусные цвета — семантика, а не бренд: зелёный/жёлтый/красный остаются.
+    private static readonly Brush Green  = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
+    private static readonly Brush Yellow = new SolidColorBrush(Color.FromRgb(0xF5, 0x9E, 0x0B));
+    private static readonly Brush Red    = new SolidColorBrush(Color.FromRgb(0xEF, 0x44, 0x44));
 
     private bool _hiddenOnce;
 
@@ -74,8 +75,112 @@ public partial class MainWindow : Window
 
         Closed += (_, _) => { _meter.Stop(); _monitor.Stop(); _engine.Timer.Stop(); };
         InitTray();
+        BuildNav();
+        BuildSwatches();
+        ShowVersion();
         _initializing = false;
         _ = CheckUpdatesAsync();
+    }
+
+    /// <summary>Версия берётся из сборки — правим только csproj, в UI подставляется сама.</summary>
+    private void ShowVersion()
+    {
+        var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0);
+        VersionSide.Text = VersionAbout.Text = "v" + v.ToString(3);
+    }
+
+    // --- Выбор акцентного цвета ---
+    private Button? _customSwatch;
+
+    private void BuildSwatches()
+    {
+        var style = (Style)FindResource("Swatch");
+        SwatchRow.Children.Clear();
+
+        foreach (var (name, color) in Theme.Presets)
+        {
+            var b = new Button
+            {
+                Style = style,
+                Background = new SolidColorBrush(color),
+                Tag = Theme.ToHex(color),
+                ToolTip = name,
+            };
+            b.Click += Accent_Click;
+            SwatchRow.Children.Add(b);
+        }
+
+        _customSwatch = new Button
+        {
+            Style = style,
+            ToolTip = "Свой цвет",
+            Content = new TextBlock
+            {
+                Text = "\uE790",   // палитра (Segoe Fluent Icons)
+                FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"),
+                FontSize = 15,
+            },
+        };
+        _customSwatch.Click += AccentCustom_Click;
+        SwatchRow.Children.Add(_customSwatch);
+
+        UpdateSwatches();
+    }
+
+    /// <summary>Подсвечивает выбранный образец и обновляет плитку «свой цвет».</summary>
+    private void UpdateSwatches()
+    {
+        if (_customSwatch is null) return;
+        var cur = Theme.Current;
+        bool isPreset = Theme.Presets.Any(p => p.Color == cur);
+        var ring = new SolidColorBrush(Color.FromRgb(0xFA, 0xFA, 0xFA));
+
+        for (int i = 0; i < Theme.Presets.Length; i++)
+            if (SwatchRow.Children[i] is Button b)
+                b.BorderBrush = Theme.Presets[i].Color == cur ? ring : Brushes.Transparent;
+
+        // своя плитка: показывает выбранный цвет, если он не из пресетов
+        _customSwatch.Background = new SolidColorBrush(isPreset ? Color.FromRgb(0x3F, 0x3F, 0x46) : cur);
+        _customSwatch.BorderBrush = isPreset ? Brushes.Transparent : ring;
+        if (_customSwatch.Content is TextBlock t)
+            t.Foreground = new SolidColorBrush(isPreset
+                ? Color.FromRgb(0xFA, 0xFA, 0xFA)
+                : ((SolidColorBrush)Application.Current.Resources["AccentFg"]).Color);
+    }
+
+    private void Accent_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button b && Theme.TryParse(b.Tag as string, out var c)) { Theme.Apply(c); UpdateSwatches(); }
+    }
+
+    private void AccentCustom_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new ColorPickerWindow(Theme.Current) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+        Theme.Apply(dlg.SelectedColor);
+        UpdateSwatches();
+    }
+
+    // --- Боковая навигация ---
+    /// <summary>Пункт меню. Имена свойств совпадают с TabItem — шаблон NavItem общий.</summary>
+    private sealed record NavEntry(string Header, string Tag);
+
+    /// <summary>
+    /// Список строится из самих вкладок, чтобы не дублировать названия и иконки.
+    /// Сами TabItem в ListBox класть нельзя — у элемента не может быть двух родителей.
+    /// </summary>
+    private void BuildNav()
+    {
+        NavList.ItemsSource = Nav.Items.OfType<TabItem>()
+            .Select(t => new NavEntry(t.Header as string ?? "", t.Tag as string ?? ""))
+            .ToList();
+        if (Nav.SelectedIndex < 0) Nav.SelectedIndex = 0;   // страховка: контент не должен быть пустым
+        NavList.SelectedIndex = Nav.SelectedIndex;
+    }
+
+    private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (NavList.SelectedIndex >= 0) Nav.SelectedIndex = NavList.SelectedIndex;
     }
 
     // --- Проверка обновлений (GitHub Releases) ---
@@ -307,6 +412,7 @@ public partial class MainWindow : Window
     private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!ReferenceEquals(e.OriginalSource, Nav)) return; // игнорируем события дочерних ComboBox
+        if (NavList is not null) NavList.SelectedIndex = Nav.SelectedIndex;  // подсветка в меню
         if (Nav.SelectedItem is TabItem ti && ti.Header is string h && h == "Диагностика"
             && _findings.Count == 0 && !_diagScanning)
             _ = RunDiagScan();

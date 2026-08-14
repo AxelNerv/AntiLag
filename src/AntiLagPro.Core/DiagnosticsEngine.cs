@@ -53,7 +53,7 @@ public sealed class DiagnosticsEngine
         if (cur > 0.6)
             list.Add(new Finding(Severity.Warn, "Timer Resolution",
                 $"Сейчас {cur:N4} ms (минимум возможный {min:N4} ms).",
-                "Включить удержание 0.5 ms (тумблер вверху).", GoTo: "Базовое"));
+                "Включить тумблер «Держать 0.5 ms».", GoTo: "Базовое"));
         else
             list.Add(new Finding(Severity.Ok, "Timer Resolution", $"{cur:N4} ms — на минимуме.", null));
     }

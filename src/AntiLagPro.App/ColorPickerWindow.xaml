@@ -1,0 +1,135 @@
+﻿<Window x:Class="AntiLagPro.App.ColorPickerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Свой цвет" Height="430" Width="330"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" WindowStartupLocation="CenterOwner" ShowInTaskbar="False"
+        FontFamily="Segoe UI Variable Text, Segoe UI" FontSize="13" Foreground="#FFFAFAFA">
+
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="#FF27272A"/>
+            <Setter Property="Foreground" Value="#FFFAFAFA"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Padding" Value="14,9"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="b" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="#FF141417" BorderBrush="#FF2F2F35" BorderThickness="1" CornerRadius="14">
+        <Grid Margin="18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Шапка (за неё можно таскать окно) -->
+            <Grid Grid.Row="0" x:Name="Header" Background="Transparent" Margin="0,0,0,16">
+                <TextBlock Text="Свой цвет" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                <Button Content="&#xE711;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="12"
+                        Background="Transparent" Foreground="#FFA1A1AA" Padding="8,4"
+                        HorizontalAlignment="Right" Click="Cancel_Click"/>
+            </Grid>
+
+            <!-- Поле насыщенности/яркости -->
+            <Border Grid.Row="1" Height="176" CornerRadius="10" ClipToBounds="True">
+                <Grid x:Name="SvArea" Cursor="Cross"
+                      MouseLeftButtonDown="Sv_Down" MouseMove="Sv_Move" MouseLeftButtonUp="Sv_Up">
+                    <Rectangle x:Name="HueFill"/>
+                    <Rectangle>
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Offset="0" Color="#FFFFFFFF"/>
+                                <GradientStop Offset="1" Color="#00FFFFFF"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Rectangle>
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Offset="0" Color="#00000000"/>
+                                <GradientStop Offset="1" Color="#FF000000"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Canvas>
+                        <Ellipse x:Name="SvCursor" Width="16" Height="16" StrokeThickness="2.5" Stroke="#FFFFFFFF"
+                                 IsHitTestVisible="False">
+                            <Ellipse.Effect><DropShadowEffect BlurRadius="4" ShadowDepth="0" Opacity="0.7"/></Ellipse.Effect>
+                        </Ellipse>
+                    </Canvas>
+                </Grid>
+            </Border>
+
+            <!-- Оттенок -->
+            <Border Grid.Row="2" Height="20" CornerRadius="10" ClipToBounds="True" Margin="0,14,0,0">
+                <Grid x:Name="HueArea" Cursor="Hand"
+                      MouseLeftButtonDown="Hue_Down" MouseMove="Hue_Move" MouseLeftButtonUp="Hue_Up">
+                    <Rectangle>
+                        <Rectangle.Fill>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                <GradientStop Offset="0.00" Color="#FFFF0000"/>
+                                <GradientStop Offset="0.17" Color="#FFFFFF00"/>
+                                <GradientStop Offset="0.33" Color="#FF00FF00"/>
+                                <GradientStop Offset="0.50" Color="#FF00FFFF"/>
+                                <GradientStop Offset="0.67" Color="#FF0000FF"/>
+                                <GradientStop Offset="0.83" Color="#FFFF00FF"/>
+                                <GradientStop Offset="1.00" Color="#FFFF0000"/>
+                            </LinearGradientBrush>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                    <Canvas>
+                        <Border x:Name="HueCursor" Width="8" Height="20" CornerRadius="4"
+                                BorderBrush="#FFFFFFFF" BorderThickness="2.5" IsHitTestVisible="False"/>
+                    </Canvas>
+                </Grid>
+            </Border>
+
+            <!-- Превью + HEX -->
+            <Grid Grid.Row="3" Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Width="46" Height="46" CornerRadius="10" BorderBrush="#FF2F2F35" BorderThickness="1">
+                    <Border x:Name="Preview" CornerRadius="9" Margin="1"/>
+                </Border>
+                <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="HEX" Foreground="#FF71717A" FontSize="10" FontWeight="SemiBold"/>
+                    <TextBox x:Name="HexBox" Margin="0,4,0,0" Padding="10,7" FontFamily="Consolas" FontSize="13"
+                             Background="#FF09090B" Foreground="#FFFAFAFA" BorderBrush="#FF2F2F35" BorderThickness="1"
+                             CaretBrush="#FFFAFAFA" KeyDown="Hex_KeyDown" LostFocus="Hex_Commit"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Кнопки -->
+            <Grid Grid.Row="4" VerticalAlignment="Bottom" Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Отмена" Click="Cancel_Click"/>
+                <Button Grid.Column="2" x:Name="OkButton" Content="Применить" Click="Ok_Click"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

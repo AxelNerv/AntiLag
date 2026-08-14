@@ -18,6 +18,7 @@ public partial class App : Application
             Shutdown();
             return;
         }
+        Theme.Load();   // акцент из настроек — до создания окна
         base.OnStartup(e);
     }
 

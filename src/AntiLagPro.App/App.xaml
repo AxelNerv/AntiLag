@@ -3,5 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <!-- Акцент приложения. Меняется на лету из Настроек (Theme.Apply),
+             поэтому во всех стилях используется через DynamicResource.
+             AccentFg — цвет текста ПОВЕРХ акцента, подбирается по яркости. -->
+        <SolidColorBrush x:Key="Accent" Color="#D4D4D8"/>
+        <SolidColorBrush x:Key="AccentFg" Color="#09090B"/>
     </Application.Resources>
 </Application>

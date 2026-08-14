@@ -6,3 +6,6 @@ obj/
 # РџСЂРѕС‡РµРµ
 .vs/
 *.suo
+
+# временный файл при подмене запущенного exe
+release/AntiLag.old.exe

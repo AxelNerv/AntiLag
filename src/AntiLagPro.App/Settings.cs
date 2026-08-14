@@ -21,4 +21,19 @@ internal static class Settings
             k.SetValue("MinimizeToTray", value ? 1 : 0, RegistryValueKind.DWord);
         }
     }
+
+    /// <summary>Акцентный цвет в виде #RRGGBB (пусто = цвет по умолчанию).</summary>
+    public static string? AccentHex
+    {
+        get
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(KeyPath);
+            return k?.GetValue("AccentHex") as string;
+        }
+        set
+        {
+            using var k = Registry.CurrentUser.CreateSubKey(KeyPath);
+            k.SetValue("AccentHex", value ?? "", RegistryValueKind.String);
+        }
+    }
 }
