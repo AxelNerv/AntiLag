@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -33,7 +34,7 @@ public sealed class GameModeTweak : ITweak
         var slot = backup.For(Id);
         using var k = Registry.CurrentUser.OpenSubKey(KeyPath, writable: true)
             ?? Registry.CurrentUser.CreateSubKey(KeyPath);
-        slot["auto"] = (k.GetValue("AutoGameModeEnabled") as int?)?.ToString();
+        slot["auto"] = (k.GetValue("AutoGameModeEnabled") as int?)?.ToString(CultureInfo.InvariantCulture);
         k.SetValue("AutoGameModeEnabled", 1, RegistryValueKind.DWord);
     }
 

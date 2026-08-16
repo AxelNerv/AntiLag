@@ -110,7 +110,7 @@ public static class GlassEffect
         var windows = new List<IntPtr>();
         try
         {
-            EnumWindows((hwnd, _) =>
+            _ = EnumWindows((hwnd, _) =>
             {
                 if (IsWindowVisible(hwnd) && IsExplorerWindow(hwnd)) windows.Add(hwnd);
                 return true;
@@ -126,12 +126,12 @@ public static class GlassEffect
             {
                 // 1) системная подложка DWM
                 int backdrop = kind is null || composition ? BACKDROP_NONE : (int)kind;
-                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref backdrop, sizeof(int));
+                _ = DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, ref backdrop, sizeof(int));
 
                 if (kind is not null)
                 {
                     int dark = darkTitle ? 1 : 0;
-                    DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
+                    _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref dark, sizeof(int));
                 }
 
                 // 2) композиция окна — свой цвет и прозрачность
@@ -139,10 +139,10 @@ public static class GlassEffect
                     state: composition ? (kind == GlassKind.Blur ? ACCENT_ACRYLICBLURBEHIND : ACCENT_GRADIENT) : ACCENT_DISABLED,
                     color: (uint)(alpha << 24 | b << 16 | g << 8 | r));
 
-                SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
+                _ = SetWindowPos(hwnd, IntPtr.Zero, 0, 0, 0, 0,
                              SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
             }
-            catch { /* окно могло закрыться прямо во время обхода */ }
+            catch (Exception ex) { Log.Warn("Не применить эффект к окну проводника", ex); }
         }
     }
 
@@ -155,7 +155,7 @@ public static class GlassEffect
         {
             Marshal.StructureToPtr(policy, ptr, false);
             var data = new WinCompAttrData { Attribute = WCA_ACCENT_POLICY, Data = ptr, SizeOfData = size };
-            SetWindowCompositionAttribute(hwnd, ref data);
+            _ = SetWindowCompositionAttribute(hwnd, ref data);
         }
         finally { Marshal.FreeHGlobal(ptr); }
     }

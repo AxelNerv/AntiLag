@@ -37,6 +37,21 @@ internal static class Settings
         }
     }
 
+    /// <summary>Плотные строки твиков: меньше вертикальных отступов.</summary>
+    public static bool DenseRows
+    {
+        get
+        {
+            using var k = Registry.CurrentUser.OpenSubKey(KeyPath);
+            return k?.GetValue("DenseRows") is int v && v == 1;
+        }
+        set
+        {
+            using var k = Registry.CurrentUser.CreateSubKey(KeyPath);
+            k.SetValue("DenseRows", value ? 1 : 0, RegistryValueKind.DWord);
+        }
+    }
+
     /// <summary>Прозрачный фон окон проводника (по умолчанию ВЫКЛ).</summary>
     public static bool Glass
     {

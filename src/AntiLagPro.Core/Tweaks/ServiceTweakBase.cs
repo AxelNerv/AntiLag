@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -32,7 +33,7 @@ public abstract class ServiceTweakBase : ITweak
             ?? throw new InvalidOperationException($"Служба {ServiceName} не найдена.");
 
         int old = k.GetValue("Start") is int s ? s : 3;
-        slot["start"] = old.ToString();
+        slot["start"] = old.ToString(CultureInfo.InvariantCulture);
 
         k.SetValue("Start", 4, RegistryValueKind.DWord);     // отключить
         ProcessRunner.Run("sc.exe", $"stop {ServiceName}");  // остановить сейчас (ошибку игнорируем)

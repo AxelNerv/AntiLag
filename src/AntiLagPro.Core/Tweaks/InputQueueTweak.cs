@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -37,13 +38,13 @@ public sealed class InputQueueTweak : ITweak
         using (var m = Registry.LocalMachine.OpenSubKey(MouseKey, writable: true)
                        ?? Registry.LocalMachine.CreateSubKey(MouseKey))
         {
-            slot["mouse"] = (m.GetValue("MouseDataQueueSize") as int?)?.ToString();
+            slot["mouse"] = (m.GetValue("MouseDataQueueSize") as int?)?.ToString(CultureInfo.InvariantCulture);
             m.SetValue("MouseDataQueueSize", Target, RegistryValueKind.DWord);
         }
         using (var k = Registry.LocalMachine.OpenSubKey(KbdKey, writable: true)
                        ?? Registry.LocalMachine.CreateSubKey(KbdKey))
         {
-            slot["kbd"] = (k.GetValue("KeyboardDataQueueSize") as int?)?.ToString();
+            slot["kbd"] = (k.GetValue("KeyboardDataQueueSize") as int?)?.ToString(CultureInfo.InvariantCulture);
             k.SetValue("KeyboardDataQueueSize", Target, RegistryValueKind.DWord);
         }
     }

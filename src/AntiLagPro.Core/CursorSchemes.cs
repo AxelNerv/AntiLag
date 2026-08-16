@@ -98,7 +98,7 @@ public static class CursorSchemes
                 using var zip = new ZipArchive(rs, ZipArchiveMode.Read);
                 zip.ExtractToDirectory(dir, overwriteFiles: true);
             }
-            catch { /* не критично — схема просто не появится */ }
+            catch (Exception ex) { Log.Warn($"Не распаковать пак курсоров «{id}»", ex); }
         }
     }
 
@@ -184,7 +184,7 @@ public static class CursorSchemes
         }
         catch { }
 
-        SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        _ = SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
     }
 
     /// <summary>Возвращает курсоры Windows по умолчанию.</summary>
@@ -208,6 +208,6 @@ public static class CursorSchemes
             foreach (var r in Roles) k.SetValue(r, "", RegistryValueKind.String);
         }
 
-        SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
+        _ = SystemParametersInfo(SPI_SETCURSORS, 0, IntPtr.Zero, SPIF_UPDATEINIFILE | SPIF_SENDCHANGE);
     }
 }

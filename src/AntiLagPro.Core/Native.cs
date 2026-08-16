@@ -17,7 +17,7 @@ internal static class Native
     /// <summary>Текущее/мин/макс разрешение таймера в миллисекундах.</summary>
     internal static (double current, double min, double max) QueryResolutionMs()
     {
-        NtQueryTimerResolution(out uint max, out uint min, out uint cur);
+        _ = NtQueryTimerResolution(out uint max, out uint min, out uint cur);
         // В API "maximum" = самое грубое значение (большое число), "minimum" = самое точное (маленькое).
         return (cur / 10000.0, min / 10000.0, max / 10000.0);
     }

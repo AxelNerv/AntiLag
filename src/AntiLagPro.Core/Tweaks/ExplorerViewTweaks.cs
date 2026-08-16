@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -26,7 +27,7 @@ public abstract class RegValueTweak : ITweak
     {
         var slot = backup.For(Id);
         using var k = Hive.OpenSubKey(KeyPath, writable: true) ?? Hive.CreateSubKey(KeyPath);
-        slot["v"] = (k.GetValue(ValueName) as int?)?.ToString();
+        slot["v"] = (k.GetValue(ValueName) as int?)?.ToString(CultureInfo.InvariantCulture);
         k.SetValue(ValueName, OnValue, RegistryValueKind.DWord);
         AfterChange();
     }

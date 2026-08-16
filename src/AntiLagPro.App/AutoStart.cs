@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using AntiLagPro.Core;
+using System.Diagnostics;
 using System.IO;
 using System.Security;
 using System.Text;
@@ -33,7 +34,7 @@ internal static class AutoStart
             using var k = Registry.CurrentUser.OpenSubKey(RunKey, writable: true);
             k?.DeleteValue(ValueName, throwOnMissingValue: false);
         }
-        catch { /* не критично */ }
+        catch (Exception ex) { Log.Warn("Не убрать старую запись автозапуска из реестра", ex); }
 
         if (on) CreateTask();
         else Run($"/Delete /TN \"{TaskName}\" /F");

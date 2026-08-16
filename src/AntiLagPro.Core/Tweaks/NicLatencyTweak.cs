@@ -107,6 +107,6 @@ public sealed class NicLatencyTweak : ITweak
                 "-NoProfile -ExecutionPolicy Bypass -Command " +
                 "\"Get-NetAdapter -Physical | Where-Object Status -eq 'Up' | Restart-NetAdapter -Confirm:$false\"");
         }
-        catch { /* если не вышло — настройки применятся после перезагрузки */ }
+        catch (Exception ex) { Log.Warn("Не перезапустить сетевой адаптер — настройки вступят в силу после перезагрузки", ex); }
     }
 }

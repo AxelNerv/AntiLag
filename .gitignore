@@ -1,4 +1,4 @@
-# Сборка .NET
+﻿# Сборка .NET
 bin/
 obj/
 *.user
@@ -9,3 +9,4 @@ obj/
 
 # Временный файл при подмене запущенного exe
 release/AntiLag.old.exe
+release/*backup*.exe

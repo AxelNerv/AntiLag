@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -32,7 +33,7 @@ public sealed class PowerThrottlingTweak : ITweak
         using var k = Registry.LocalMachine.CreateSubKey(KeyPath);
         object? old = k.GetValue(ValueName);
         slot["existed"] = (old is not null).ToString();
-        slot["v"] = (old as int?)?.ToString();
+        slot["v"] = (old as int?)?.ToString(CultureInfo.InvariantCulture);
         k.SetValue(ValueName, 1, RegistryValueKind.DWord);
     }
 

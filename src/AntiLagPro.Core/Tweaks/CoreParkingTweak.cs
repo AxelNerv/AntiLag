@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
@@ -47,8 +48,8 @@ public sealed class CoreParkingTweak : ITweak
         slot["scheme"] = g;
         using (var k = Registry.LocalMachine.CreateSubKey(KeyPath(g)))
         {
-            slot["ac"] = (k.GetValue("ACSettingIndex") as int?)?.ToString();
-            slot["dc"] = (k.GetValue("DCSettingIndex") as int?)?.ToString();
+            slot["ac"] = (k.GetValue("ACSettingIndex") as int?)?.ToString(CultureInfo.InvariantCulture);
+            slot["dc"] = (k.GetValue("DCSettingIndex") as int?)?.ToString(CultureInfo.InvariantCulture);
             k.SetValue("ACSettingIndex", 100, RegistryValueKind.DWord);
             k.SetValue("DCSettingIndex", 100, RegistryValueKind.DWord);
         }

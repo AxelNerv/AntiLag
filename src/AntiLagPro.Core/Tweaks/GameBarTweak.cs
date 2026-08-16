@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -31,13 +32,13 @@ public sealed class GameBarTweak : ITweak
 
         using (var k = Registry.CurrentUser.CreateSubKey(UserKey))
         {
-            slot["dvr"] = (k.GetValue("GameDVR_Enabled") as int?)?.ToString();
+            slot["dvr"] = (k.GetValue("GameDVR_Enabled") as int?)?.ToString(CultureInfo.InvariantCulture);
             k.SetValue("GameDVR_Enabled", 0, RegistryValueKind.DWord);
         }
         using (var p = Registry.LocalMachine.CreateSubKey(PolicyKey))
         {
             slot["policyExisted"] = (p.GetValue("AllowGameDVR") is not null).ToString();
-            slot["policy"] = (p.GetValue("AllowGameDVR") as int?)?.ToString();
+            slot["policy"] = (p.GetValue("AllowGameDVR") as int?)?.ToString(CultureInfo.InvariantCulture);
             p.SetValue("AllowGameDVR", 0, RegistryValueKind.DWord);
         }
     }

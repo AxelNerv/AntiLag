@@ -8,5 +8,8 @@
              AccentFg — цвет текста ПОВЕРХ акцента, подбирается по яркости. -->
         <SolidColorBrush x:Key="Accent" Color="#D4D4D8"/>
         <SolidColorBrush x:Key="AccentFg" Color="#09090B"/>
+
+        <!-- Отступы строки твика: меняются переключателем плотности в Настройках -->
+        <Thickness x:Key="RowPad" Left="17" Top="15" Right="17" Bottom="15"/>
     </Application.Resources>
 </Application>

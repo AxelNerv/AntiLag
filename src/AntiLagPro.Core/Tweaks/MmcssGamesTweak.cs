@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -35,8 +36,8 @@ public sealed class MmcssGamesTweak : ITweak
         using var k = Registry.LocalMachine.OpenSubKey(KeyPath, writable: true)
             ?? Registry.LocalMachine.CreateSubKey(KeyPath);
 
-        slot["gpu"]  = (k.GetValue("GPU Priority") as int?)?.ToString();
-        slot["prio"] = (k.GetValue("Priority") as int?)?.ToString();
+        slot["gpu"]  = (k.GetValue("GPU Priority") as int?)?.ToString(CultureInfo.InvariantCulture);
+        slot["prio"] = (k.GetValue("Priority") as int?)?.ToString(CultureInfo.InvariantCulture);
         slot["cat"]  = k.GetValue("Scheduling Category") as string;
         slot["sfio"] = k.GetValue("SFIO Priority") as string;
 

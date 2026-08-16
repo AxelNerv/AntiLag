@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -33,7 +34,7 @@ public sealed class HagsTweak : ITweak
         var slot = backup.For(Id);
         using var k = Registry.LocalMachine.OpenSubKey(KeyPath, writable: true)
             ?? Registry.LocalMachine.CreateSubKey(KeyPath);
-        slot["mode"] = (k.GetValue("HwSchMode") as int?)?.ToString();
+        slot["mode"] = (k.GetValue("HwSchMode") as int?)?.ToString(CultureInfo.InvariantCulture);
         k.SetValue("HwSchMode", 2, RegistryValueKind.DWord);
     }
 

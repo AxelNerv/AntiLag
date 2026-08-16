@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -36,8 +37,8 @@ public sealed class NagleTweak : ITweak
         slot["iface"] = id;
         using var k = Registry.LocalMachine.OpenSubKey(Path(id), writable: true)
             ?? throw new InvalidOperationException("Ключ адаптера не найден.");
-        slot["ack"] = (k.GetValue("TcpAckFrequency") as int?)?.ToString() ?? "none";
-        slot["nodelay"] = (k.GetValue("TCPNoDelay") as int?)?.ToString() ?? "none";
+        slot["ack"] = (k.GetValue("TcpAckFrequency") as int?)?.ToString(CultureInfo.InvariantCulture) ?? "none";
+        slot["nodelay"] = (k.GetValue("TCPNoDelay") as int?)?.ToString(CultureInfo.InvariantCulture) ?? "none";
         k.SetValue("TcpAckFrequency", 1, RegistryValueKind.DWord);
         k.SetValue("TCPNoDelay", 1, RegistryValueKind.DWord);
     }

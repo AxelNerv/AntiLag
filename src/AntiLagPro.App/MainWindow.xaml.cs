@@ -3,13 +3,14 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using AntiLagPro.Core;
 
 namespace AntiLagPro.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IDisposable
 {
     private readonly TweakEngine _engine = new();
     private readonly LatencyMeter _meter = new();
@@ -53,7 +54,6 @@ public partial class MainWindow : Window
         }
 
         TweaksItems.ItemsSource = _rows;
-        GameTweaksItems.ItemsSource = _gameRows;
         LookTweaksItems.ItemsSource = _lookRows;
         FindingsItems.ItemsSource = _findings;
         DnsItems.ItemsSource = _dnsRows;
@@ -71,6 +71,8 @@ public partial class MainWindow : Window
         AutoStartCheck.IsChecked = AutoStart.IsEnabled();
         MinTrayCheck.IsChecked = Settings.MinimizeToTray;
         AutoUpdateCheck.IsChecked = Settings.AutoUpdate;
+        DenseCheck.IsChecked = Settings.DenseRows;
+        ApplyDensity(Settings.DenseRows);
 
         _uiTimer.Tick += (_, _) => UpdateStatus();
         _uiTimer.Start();
@@ -121,9 +123,13 @@ public partial class MainWindow : Window
         GlassTintRow.Opacity = custom ? 1.0 : 0.45;
     }
 
-    private void ApplyGlass()
+    private static void ApplyGlass()
     {
-        Theme.TryParse(Settings.GlassColor, out var c);
+        if (!Theme.TryParse(Settings.GlassColor, out var c))
+        {
+            Log.Warn($"Не разобрать цвет стекла «{Settings.GlassColor}», беру серый по умолчанию");
+            c = System.Windows.Media.Color.FromRgb(0x20, 0x20, 0x26);
+        }
         GlassEffect.Enable((GlassKind)Settings.GlassKind, c.R, c.G, c.B, (byte)Settings.GlassAlpha);
     }
 
@@ -154,7 +160,8 @@ public partial class MainWindow : Window
 
     private void GlassColor_Click(object sender, RoutedEventArgs e)
     {
-        Theme.TryParse(Settings.GlassColor, out var cur);
+        if (!Theme.TryParse(Settings.GlassColor, out var cur))
+            cur = System.Windows.Media.Color.FromRgb(0x20, 0x20, 0x26);
         var dlg = new ColorPickerWindow(cur) { Owner = this };
         if (dlg.ShowDialog() != true) return;
         Settings.GlassColor = Theme.ToHex(dlg.SelectedColor);
@@ -332,18 +339,78 @@ public partial class MainWindow : Window
     /// Список строится из самих вкладок, чтобы не дублировать названия и иконки.
     /// Сами TabItem в ListBox класть нельзя — у элемента не может быть двух родителей.
     /// </summary>
+    /// <summary>Пункт меню знает, какой вкладке соответствует.</summary>
+    private sealed record NavLink(string Header, string Tag, int Index);
+
+    /// <summary>Разделы по группам боковой панели (как в макете).</summary>
+    private static readonly string[] GroupA = { "Базовое", "Игровые", "Ускорение" };
+    private static readonly string[] GroupB = { "Сеть", "DNS", "DPC-метр", "Диагностика", "Драйверы" };
+
+    private ListBox[] NavLists => new[] { NavA, NavB, NavC };
+    private bool _navSync;
+
     private void BuildNav()
     {
-        NavList.ItemsSource = Nav.Items.OfType<TabItem>()
-            .Select(t => new NavEntry(t.Header as string ?? "", t.Tag as string ?? ""))
+        var all = Nav.Items.OfType<TabItem>()
+            .Select((t, i) => new NavLink(t.Header as string ?? "", t.Tag as string ?? "", i))
             .ToList();
+
+        NavA.ItemsSource = all.Where(n => GroupA.Contains(n.Header)).ToList();
+        NavB.ItemsSource = all.Where(n => GroupB.Contains(n.Header)).ToList();
+        NavC.ItemsSource = all.Where(n => !GroupA.Contains(n.Header) && !GroupB.Contains(n.Header)).ToList();
+
         if (Nav.SelectedIndex < 0) Nav.SelectedIndex = 0;   // страховка: контент не должен быть пустым
-        NavList.SelectedIndex = Nav.SelectedIndex;
+        SyncNavSelection();
     }
 
     private void NavList_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (NavList.SelectedIndex >= 0) Nav.SelectedIndex = NavList.SelectedIndex;
+        if (_navSync || sender is not ListBox list || list.SelectedItem is not NavLink link) return;
+
+        _navSync = true;
+        foreach (var other in NavLists) if (!ReferenceEquals(other, list)) other.SelectedIndex = -1;
+        _navSync = false;
+
+        Nav.SelectedIndex = link.Index;
+    }
+
+    /// <summary>Подсветить пункт, соответствующий открытой вкладке (переходы из Диагностики).</summary>
+    private void SyncNavSelection()
+    {
+        if (_navSync) return;
+        _navSync = true;
+        foreach (var list in NavLists)
+        {
+            var items = list.ItemsSource as IEnumerable<NavLink>;
+            var match = items?.FirstOrDefault(n => n.Index == Nav.SelectedIndex);
+            list.SelectedItem = match;      // null снимет выделение в остальных группах
+        }
+        _navSync = false;
+    }
+
+    // --- Своя шапка окна ---
+    private void Caption_Drag(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) { Win_Maximize(sender, e); return; }
+        if (e.ButtonState == MouseButtonState.Pressed) DragMove();
+    }
+
+    private void Win_Minimize(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Win_Maximize(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        MaxButton.Content = WindowState == WindowState.Maximized ? "\uE923" : "\uE922";
+    }
+
+    private void Win_Close(object sender, RoutedEventArgs e) => Close();
+
+    /// <summary>Значок в трее — неуправляемый ресурс, освобождаем явно.</summary>
+    public void Dispose()
+    {
+        if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
+        _glassDelay?.Stop();
+        GC.SuppressFinalize(this);
     }
 
     // --- Обновления (GitHub Releases) ---
@@ -509,12 +576,99 @@ public partial class MainWindow : Window
             else if (s.Tweak.Tier == TweakTier.Appearance) _lookRows.Add(row);
             else _rows.Add(row);
         }
+        foreach (var r in AllRows)
+            r.PropertyChanged += (_, e) => { if (e.PropertyName == nameof(TweakRow.IsSelected)) UpdatePending(); };
+
+        BuildGameGroups();
+        UpdatePending();
+        UpdateLookStatus();
+    }
+
+    /// <summary>Сколько переключателей отличается от того, что сейчас в системе.</summary>
+    private void UpdatePending()
+    {
+        UpdateLookStatus();
+        int n = AllRows.Count(r => r.IsPending);
+        PendingText.Text = n == 0 ? "" : $"{n} {Plural(n, "изменение", "изменения", "изменений")} не применено";
+    }
+
+    private static string Plural(int n, string one, string few, string many)
+    {
+        int m10 = n % 10, m100 = n % 100;
+        if (m10 == 1 && m100 != 11) return one;
+        if (m10 is >= 2 and <= 4 && m100 is < 12 or > 14) return few;
+        return many;
+    }
+
+    // --- Блоки раздела «Игровые» ---
+    private string? _openGroup;   // null = показываем карточки блоков
+
+    private void BuildGameGroups()
+    {
+        GameGroupsItems.ItemsSource = TweakCatalog.GameGroups
+            .Select(g => new GroupCard(g, _gameRows.Where(r => r.GroupId == g.Id).ToList()))
+            .Where(c => c.Total > 0)
+            .ToList();
+        ShowGameGroups();
+    }
+
+    private void ShowGameGroups()
+    {
+        _openGroup = null;
+        GameGroupsItems.Visibility = Visibility.Visible;
+        GameTweaksItems.Visibility = Visibility.Collapsed;
+        GameBack.Visibility = Visibility.Collapsed;
+        GameDescButton.Visibility = Visibility.Collapsed;
+        GameSubtitle.Text = "Опциональные твики. Выбери блок — внутри только то, что относится к нему.";
+    }
+
+    private void GroupCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is not GroupCard card) return;
+        _openGroup = card.Id;
+
+        GameTweaksItems.ItemsSource = _gameRows.Where(r => r.GroupId == card.Id).ToList();
+        GameGroupsItems.Visibility = Visibility.Collapsed;
+        GameTweaksItems.Visibility = Visibility.Visible;
+        GameBack.Visibility = Visibility.Visible;
+        GameDescButton.Visibility = Visibility.Visible;
+        GameSubtitle.Text = card.Description;
+    }
+
+    private void GroupBack_Click(object sender, RoutedEventArgs e) => ShowGameGroups();
+
+    /// <summary>Разворот описания у одной строки.</summary>
+    private void TweakExpand_Click(object sender, MouseButtonEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is TweakRow row) row.IsExpanded = !row.IsExpanded;
+    }
+
+    /// <summary>Кнопка «Показать описания» — раскрывает или сворачивает все сразу.</summary>
+    private void ToggleAllDesc_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b) return;
+        bool game = (b.Tag as string) == "game";
+
+        var rows = game
+            ? _gameRows.Where(r => _openGroup is null || r.GroupId == _openGroup).ToList()
+            : _rows.ToList();
+        if (rows.Count == 0) return;
+
+        bool expand = rows.Any(r => !r.IsExpanded);   // если хоть одна свёрнута — раскрываем все
+        foreach (var r in rows) r.IsExpanded = expand;
+        b.Content = expand ? "Скрыть описания" : "Показать описания";
     }
 
     private void UpdateStatus()
     {
-        TimerText.Text = $"{_engine.Timer.CurrentMs:N4} ms";
-        AdminText.Text = TweakEngine.IsElevated() ? "права администратора: есть" : "БЕЗ прав администратора!";
+        double ms = _engine.Timer.CurrentMs;
+        TimerText.Text = $"{ms:N4} ms";
+        TimerState.Text = ms <= 0.6 ? "АКТИВЕН" : "ОБЫЧНЫЙ";
+        TimerState.Foreground = ms <= 0.6 ? (Brush)Application.Current.Resources["Accent"] : Yellow;
+
+        AdminText.Text = TweakEngine.IsElevated()
+            ? $"admin: есть · автозапуск: {(AutoStartCheck.IsChecked == true ? "вкл" : "выкл")}"
+            : "нет прав администратора";
 
         if (_meter.IsRunning)
         {
@@ -530,7 +684,7 @@ public partial class MainWindow : Window
             MonLatency.Text  = $"{_monitor.AvgLatency:N0} мс";
             MonLoss.Text     = $"{_monitor.LossPercent:N1} %";
             MonJitter.Text   = $"{_monitor.Jitter:N0} мс";
-            MonPeaks.Text    = _monitor.Peaks.ToString();
+            MonPeaks.Text    = _monitor.Peaks.ToString(System.Globalization.CultureInfo.CurrentCulture);
             MonStatus.Foreground = LevelColor(_monitor.StatusLevel);
             MonStatusPill.Background = LevelPill(_monitor.StatusLevel);
         }
@@ -550,7 +704,7 @@ public partial class MainWindow : Window
     private static Brush LevelColor(int level)
         => level >= 2 ? Red : level == 1 ? Yellow : Green;
 
-    private static Brush LevelPill(int level)
+    private static SolidColorBrush LevelPill(int level)
         => level >= 2 ? new SolidColorBrush(Color.FromRgb(0x2A, 0x16, 0x18))
          : level == 1 ? new SolidColorBrush(Color.FromRgb(0x2A, 0x22, 0x10))
          :              new SolidColorBrush(Color.FromRgb(0x10, 0x22, 0x18));
@@ -601,7 +755,7 @@ public partial class MainWindow : Window
         SysUptime.Text = _sysmon.Uptime();
         TileCpu.Text  = $"{_sysmon.CpuPercent():N0} %";
         TileMem.Text  = $"{_sysmon.MemPercent()} %";
-        TileProc.Text = _sysmon.Processes().ToString();
+        TileProc.Text = _sysmon.Processes().ToString(System.Globalization.CultureInfo.CurrentCulture);
         var net = _sysmon.Network();
         TileNet.Text = $"{net.totalGB:N1} ГБ";
         TileNetSpeed.Text = $"↑ {SystemMonitor.Speed(net.up)}   ↓ {SystemMonitor.Speed(net.down)}";
@@ -641,7 +795,7 @@ public partial class MainWindow : Window
     private void Nav_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (!ReferenceEquals(e.OriginalSource, Nav)) return; // игнорируем события дочерних ComboBox
-        if (NavList is not null) NavList.SelectedIndex = Nav.SelectedIndex;  // подсветка в меню
+        SyncNavSelection();   // подсветка пункта в боковой панели
         if (Nav.SelectedItem is TabItem ti && ti.Header is string h && h == "Диагностика"
             && _findings.Count == 0 && !_diagScanning)
             _ = RunDiagScan();
@@ -740,6 +894,100 @@ public partial class MainWindow : Window
                 Height = h;
             }
         }
+    }
+
+    // --- Блоки раздела «Оформление» ---
+    private void LookBlock_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not string id) return;
+
+        LookCards.Visibility = Visibility.Collapsed;
+        LookBack.Visibility = Visibility.Visible;
+
+        LookPanelCursors.Visibility  = id == "cursors"  ? Visibility.Visible : Visibility.Collapsed;
+        LookPanelGlass.Visibility    = id == "glass"    ? Visibility.Visible : Visibility.Collapsed;
+        LookPanelExplorer.Visibility = id == "explorer" ? Visibility.Visible : Visibility.Collapsed;
+
+        LookSubtitle.Text = id switch
+        {
+            "cursors" => "Готовые схемы указателей — ставятся одним кликом. Свои паки тоже подхватываются.",
+            "glass"   => "Стеклянный фон окон папок: размытие или заливка со своим цветом.",
+            _         => "Панель навигации, расширения файлов, контекстное меню.",
+        };
+    }
+
+    private void LookBack_Click(object sender, RoutedEventArgs e)
+    {
+        LookCards.Visibility = Visibility.Visible;
+        LookBack.Visibility = Visibility.Collapsed;
+        LookPanelCursors.Visibility = LookPanelGlass.Visibility = LookPanelExplorer.Visibility = Visibility.Collapsed;
+        LookSubtitle.Text = "Внешний вид Windows: курсоры, стекло проводника и мелочи интерфейса.";
+        UpdateLookStatus();
+    }
+
+    /// <summary>Счётчик включённых твиков вида на карточке блока.</summary>
+    private void UpdateLookStatus()
+    {
+        if (LookExplorerStatus is null) return;
+        LookExplorerStatus.Text = $"{_lookRows.Count(r => r.IsSelected)} / {_lookRows.Count} ВКЛ";
+    }
+
+    private void OpenLog_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!System.IO.File.Exists(Log.Path)) Log.Info("Журнал открыт пользователем — записей об ошибках нет.");
+            Process.Start(new ProcessStartInfo(Log.Path) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(this, "Не удалось открыть журнал: " + ex.Message, "AntiLag",
+                            MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
+    // --- Плотность строк ---
+    private static void ApplyDensity(bool dense)
+        => Application.Current.Resources["RowPad"] = dense ? new Thickness(17, 10, 17, 10) : new Thickness(17, 15, 17, 15);
+
+    private void Dense_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        Settings.DenseRows = true; ApplyDensity(true);
+    }
+
+    private void Dense_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        Settings.DenseRows = false; ApplyDensity(false);
+    }
+
+    // --- Блоки раздела «Сеть» ---
+    private void NetBlock_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not string id) return;
+
+        NetCards.Visibility = Visibility.Collapsed;
+        NetBack.Visibility = Visibility.Visible;
+
+        NetPanelState.Visibility = id == "state" ? Visibility.Visible : Visibility.Collapsed;
+        NetPanelSpeed.Visibility = id == "speed" ? Visibility.Visible : Visibility.Collapsed;
+        NetPanelPing.Visibility  = id == "ping"  ? Visibility.Visible : Visibility.Collapsed;
+
+        NetSubtitle.Text = id switch
+        {
+            "state" => "Мониторинг задержки, потерь и джиттера в реальном времени.",
+            "speed" => "Многопоточный замер: RU-сервер Selectel или Cloudflare.",
+            _       => "Ping, TCPing, маршрут до узла и разбор типовых ошибок.",
+        };
+    }
+
+    private void NetBack_Click(object sender, RoutedEventArgs e)
+    {
+        NetCards.Visibility = Visibility.Visible;
+        NetBack.Visibility = Visibility.Collapsed;
+        NetPanelState.Visibility = NetPanelSpeed.Visibility = NetPanelPing.Visibility = Visibility.Collapsed;
+        NetSubtitle.Text = "Диагностика и измерения — по блокам.";
     }
 
     // --- Мониторинг соединения ---

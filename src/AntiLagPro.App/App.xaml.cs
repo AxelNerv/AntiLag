@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace AntiLagPro.App;
 
-public partial class App : Application
+public partial class App : Application, IDisposable
 {
     private Mutex? _single;
 
@@ -24,7 +24,14 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _single?.Dispose();
+        Dispose();
         base.OnExit(e);
+    }
+
+    public void Dispose()
+    {
+        _single?.Dispose();
+        _single = null;
+        GC.SuppressFinalize(this);
     }
 }

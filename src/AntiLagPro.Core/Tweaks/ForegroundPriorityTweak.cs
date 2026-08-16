@@ -1,4 +1,5 @@
-﻿using Microsoft.Win32;
+﻿using System.Globalization;
+using Microsoft.Win32;
 
 namespace AntiLagPro.Core.Tweaks;
 
@@ -30,7 +31,7 @@ public sealed class ForegroundPriorityTweak : ITweak
         var slot = backup.For(Id);
         using var k = Registry.LocalMachine.OpenSubKey(KeyPath, writable: true)
             ?? Registry.LocalMachine.CreateSubKey(KeyPath);
-        slot["v"] = (k.GetValue(ValueName) as int?)?.ToString();
+        slot["v"] = (k.GetValue(ValueName) as int?)?.ToString(CultureInfo.InvariantCulture);
         k.SetValue(ValueName, 0x26, RegistryValueKind.DWord);
     }
 

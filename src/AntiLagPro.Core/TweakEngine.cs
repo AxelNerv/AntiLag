@@ -33,12 +33,12 @@ public sealed class TweakEngine
             new CoreParkingTweak(),
             new SystemResponsivenessTweak(),
             new NagleTweak(),
+            new NetworkThrottlingTweak(),
             new PowerThrottlingTweak(),
             new MmcssGamesTweak(),
             new NicLatencyTweak(),
             new DynamicTickTweak(),
             new InputQueueTweak(),
-            new MouseAccelTweak(),
             new GameModeTweak(),
             new HagsTweak(),
             // Оформление Windows

@@ -6,6 +6,17 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Строгий анализ: ошибками считаем всё, что может реально сломаться
+         (культура чисел, утечка ресурсов, проигнорированный результат вызова).
+         Чисто стилистические правила отключены осознанно:
+         CA1822  - «метод можно сделать static»: у сервисов это часть их API;
+         CA1838  - StringBuilder в P/Invoke: читаемее буфера, вызовов единицы;
+         CA1859  - возврат конкретного типа кисти вместо Brush: выигрыш незаметен;
+         CA1720  - «имя содержит имя типа»;
+         CA2249  - IndexOf вместо Contains: там сравнение с учётом культуры. -->
+    <NoWarn>CA1822;CA1838;CA1859;CA1720;CA2249</NoWarn>
     <AssemblyName>antilag</AssemblyName>
     <RootNamespace>AntiLagPro.Cli</RootNamespace>
     <!-- Манифест: требуем запуск от администратора -->

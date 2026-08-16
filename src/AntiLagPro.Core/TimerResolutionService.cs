@@ -20,13 +20,16 @@ public sealed class TimerResolutionService
     /// Запросить 0.5 ms. Держится, пока процесс жив (или пока не вызван Stop()).
     public void Start()
     {
-        Native.NtSetTimerResolution(Target, true, out _);
-        _active = true;
+        // Это ядро работы программы — если ядро отказало, молчать нельзя.
+        int status = Native.NtSetTimerResolution(Target, true, out _);
+        if (status != 0) Log.Error($"Не удалось запросить таймер 0.5 ms (код {status:X8})");
+        _active = status == 0;
     }
 
     public void Stop()
     {
-        Native.NtSetTimerResolution(Target, false, out _);
+        int status = Native.NtSetTimerResolution(Target, false, out _);
+        if (status != 0) Log.Warn($"Не удалось вернуть таймер системе (код {status:X8})");
         _active = false;
     }
 }
