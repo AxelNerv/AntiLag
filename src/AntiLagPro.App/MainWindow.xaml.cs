@@ -661,6 +661,7 @@ public partial class MainWindow : Window, IDisposable
 
     private void UpdateStatus()
     {
+        // за удержанием следит сторож внутри сервиса — здесь только показываем
         double ms = _engine.Timer.CurrentMs;
         TimerText.Text = $"{ms:N4} ms";
         TimerState.Text = ms <= 0.6 ? "АКТИВЕН" : "ОБЫЧНЫЙ";
@@ -868,8 +869,17 @@ public partial class MainWindow : Window, IDisposable
         RebootBox.Visibility = needed ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void HoldTimer_Checked(object sender, RoutedEventArgs e) => _engine.Timer.Start();
-    private void HoldTimer_Unchecked(object sender, RoutedEventArgs e) => _engine.Timer.Stop();
+    private void HoldTimer_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;   // при старте таймер уже запущен в конструкторе
+        _engine.Timer.Start();
+    }
+
+    private void HoldTimer_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;   // иначе разметка при загрузке снимала удержание
+        _engine.Timer.Stop();
+    }
 
     // --- Настройки ---
     private void AutoStart_Checked(object sender, RoutedEventArgs e)
