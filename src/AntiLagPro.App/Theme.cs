@@ -31,7 +31,6 @@ internal static class Theme
         Settings.AccentHex = ToHex(c);
     }
 
-    /// <summary>Загружает сохранённый цвет при старте.</summary>
     public static void Load()
     {
         var saved = Settings.AccentHex;

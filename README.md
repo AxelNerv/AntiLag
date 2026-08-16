@@ -33,7 +33,7 @@ AntiLag работает **строго в user-mode**: только офици�
 
 ## 📥 Установка
 
-1. Скачай [`release/AntiLag.exe`](release/AntiLag.exe).
+1. Скачай `AntiLag.exe` из [последнего релиза](https://github.com/AxelNerv/AntiLag/releases/latest).
 2. Запусти **от имени администратора** (нужно для изменения системных настроек).
 
 Это один self-contained файл — **.NET ставить не нужно**, всё внутри.
@@ -58,7 +58,7 @@ AntiLag работает **строго в user-mode**: только офици�
 # обычная сборка
 dotnet build src/AntiLagPro.App -c Release
 
-# собрать один self-contained .exe (как в release/)
+# собрать один self-contained .exe (такой же, как в релизе)
 dotnet publish src/AntiLagPro.App -c Release -r win-x64 --self-contained true `
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true `
   -p:EnableCompressionInSingleFile=true -p:DebugType=none
@@ -69,13 +69,11 @@ dotnet publish src/AntiLagPro.App -c Release -r win-x64 --self-contained true `
 
 ## 📂 Структура
 
-| Папка | Что внутри |
-|-------|-----------|
-| [`src/`](src/) | Исходный код (.NET 8, WPF, C# 12) |
-| [`release/`](release/) | Готовая программа — `AntiLag.exe` |
+В репозитории только исходный код — готовая программа раздаётся через [релизы](https://github.com/AxelNerv/AntiLag/releases).
 
 - `src/AntiLagPro.Core` — движок (твики, бэкап, диагностика, тест скорости, монитор системы).
 - `src/AntiLagPro.App` — интерфейс (WPF, OLED-тёмная тема).
+- `src/AntiLagPro.Cli` — консольная версия движка.
 
 ## Лицензия
 

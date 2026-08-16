@@ -336,13 +336,11 @@ public partial class MainWindow : Window, IDisposable
     private sealed record NavEntry(string Header, string Tag);
 
     /// <summary>
-    /// Список строится из самих вкладок, чтобы не дублировать названия и иконки.
-    /// Сами TabItem в ListBox класть нельзя — у элемента не может быть двух родителей.
+    /// Строится из самих вкладок, чтобы не дублировать названия. Сами TabItem в
+    /// ListBox класть нельзя — у элемента не может быть двух родителей.
     /// </summary>
-    /// <summary>Пункт меню знает, какой вкладке соответствует.</summary>
     private sealed record NavLink(string Header, string Tag, int Index);
 
-    /// <summary>Разделы по группам боковой панели (как в макете).</summary>
     private static readonly string[] GroupA = { "Базовое", "Игровые", "Ускорение" };
     private static readonly string[] GroupB = { "Сеть", "DNS", "DPC-метр", "Диагностика", "Драйверы" };
 
@@ -637,7 +635,6 @@ public partial class MainWindow : Window, IDisposable
 
     private void GroupBack_Click(object sender, RoutedEventArgs e) => ShowGameGroups();
 
-    /// <summary>Разворот описания у одной строки.</summary>
     private void TweakExpand_Click(object sender, MouseButtonEventArgs e)
     {
         if ((sender as FrameworkElement)?.DataContext is TweakRow row) row.IsExpanded = !row.IsExpanded;

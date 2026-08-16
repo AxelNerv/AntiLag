@@ -11,13 +11,9 @@ namespace AntiLagPro.Core;
 public enum GlassKind { Mica = 2, Acrylic = 3, Tabbed = 4, Blur = 10, Tint = 11 }
 
 /// <summary>
-/// Прозрачный фон у окон проводника.
-///
-/// Известный ExplorerBlurMica делает это инъекцией DLL в explorer.exe и перехватом
-/// вызовов отрисовки. Мы так не делаем принципиально (никаких инъекций и хуков),
-/// поэтому используем официальный DWM API: он умеет назначать окну системную
-/// подложку (слюда/акрил) снаружи, без вмешательства в чужой процесс.
-/// Эффект слабее, зато безопасно и не ломается после обновлений Windows.
+/// Прозрачный фон у окон проводника. Известный ExplorerBlurMica делает это
+/// инъекцией DLL в explorer.exe — мы так не делаем принципиально и работаем
+/// снаружи, официальным DWM API. Эффект слабее, зато безопасно.
 /// </summary>
 public static class GlassEffect
 {
@@ -33,8 +29,8 @@ public static class GlassEffect
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int cx, int cy, uint flags);
 
-    // Недокументированный, но давно используемый API композиции окна (так же
-    // работает TranslucentTB с панелью задач). Применяется к ЧУЖИМ окнам без инъекции.
+    // Недокументированный, но давно используемый API композиции (так же работает
+    // TranslucentTB): применяется к чужим окнам без инъекции.
     [DllImport("user32.dll")]
     private static extern int SetWindowCompositionAttribute(IntPtr hwnd, ref WinCompAttrData data);
 
@@ -79,10 +75,7 @@ public static class GlassEffect
 
     public static bool IsRunning => _watcher is not null;
 
-    /// <summary>
-    /// Включает эффект и следит за новыми окнами проводника.
-    /// Цвет и прозрачность действуют в режимах «Размытие» и «Заливка».
-    /// </summary>
+    /// <summary>Цвет и прозрачность действуют в режимах «Размытие» и «Заливка».</summary>
     public static void Enable(GlassKind kind, byte r = 32, byte g = 32, byte b = 38, byte alpha = 160, bool darkTitle = true)
     {
         _watcher?.Dispose();
@@ -99,11 +92,9 @@ public static class GlassEffect
     }
 
     /// <summary>
-    /// Применяет эффект ко всем окнам проводника (kind = null — снять эффект).
-    ///
-    /// ВНИМАНИЕ: DwmExtendFrameIntoClientArea здесь применять НЕЛЬЗЯ — на чужом
-    /// окне DWM начинает ждать прозрачный фон, которого проводник не рисует,
-    /// и окно становится белым.
+    /// Применяет эффект ко всем окнам проводника (kind = null — снять).
+    /// DwmExtendFrameIntoClientArea тут применять НЕЛЬЗЯ: на чужом окне DWM ждёт
+    /// прозрачный фон, которого проводник не рисует, и окно становится белым.
     /// </summary>
     private static void Apply(GlassKind? kind, byte r, byte g, byte b, byte alpha, bool darkTitle)
     {

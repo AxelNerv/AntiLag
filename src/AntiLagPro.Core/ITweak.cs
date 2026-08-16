@@ -25,10 +25,7 @@ public interface ITweak
     string Description { get; }
     TweakTier Tier { get; }
 
-    /// Применён ли твик прямо сейчас (для состояния галочки).
     bool IsApplied();
-
-    /// Требуется ли перезагрузка, чтобы изменение вступило в силу.
     bool RequiresReboot { get; }
 
     void Apply(BackupData backup);

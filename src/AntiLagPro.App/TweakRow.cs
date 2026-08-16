@@ -65,7 +65,6 @@ public sealed class TweakRow : INotifyPropertyChanged
         set { if (_isSelected != value) { _isSelected = value; OnPropertyChanged(); } }
     }
 
-    /// <summary>Развёрнуто ли подробное описание.</summary>
     private bool _isExpanded;
     public bool IsExpanded
     {

@@ -3,14 +3,9 @@
 namespace AntiLagPro.Core.Tweaks;
 
 /// <summary>
-/// Кастомная схема питания "AntiLag" (как делал оригинальный AntiLag:
-/// дублирует активный план и правит КОПИЮ — твой исходный план не трогается).
-///
-/// Что отключаем (по результатам ресёрча для Win11 / Ryzen):
-///   - Core parking (парковка ядер) -> убирает лаг от "разбудки" ядер на взрывных нагрузках
-///   - Processor min/max state = 100%, boost = Aggressive
-///   - PCI Express ASPM (энергосбережение шины) = Off
-///   - Диск не выключать, политика охлаждения = Active
+/// Схема питания «AntiLag»: дублирует активный план и правит КОПИЮ, исходный не трогает.
+/// Отключает парковку ядер (убирает лаг от «разбудки» на взрывных нагрузках),
+/// держит процессор на 100% с агрессивным бустом, снимает энергосбережение PCIe и диска.
 /// </summary>
 public sealed class PowerPlanTweak : ITweak
 {
@@ -42,7 +37,6 @@ public sealed class PowerPlanTweak : ITweak
 
     public bool IsApplied()
     {
-        // Активна ли наша схема? Смотрим имя в скобках в выводе powercfg.
         string active = ProcessRunner.Powercfg("/getactivescheme");
         return active.Contains(PlanName, StringComparison.OrdinalIgnoreCase);
     }
@@ -51,18 +45,16 @@ public sealed class PowerPlanTweak : ITweak
     {
         var slot = backup.For(Id);
 
-        // 1. Запомнить исходную активную схему (чтобы вернуть при откате).
+        // исходную схему запоминаем, чтобы вернуть при откате
         string activeGuid = ExtractGuid(ProcessRunner.Powercfg("/getactivescheme"))
             ?? throw new InvalidOperationException("Не удалось определить активную схему питания.");
         slot["originalActiveGuid"] = activeGuid;
 
-        // 2. Дублировать её -> получаем новый GUID.
         string dupOut = ProcessRunner.Powercfg($"-duplicatescheme {activeGuid}");
         string newGuid = ExtractGuid(dupOut)
             ?? throw new InvalidOperationException("Не удалось создать копию схемы питания.");
         slot["createdGuid"] = newGuid;
 
-        // 3. Переименовать и настроить копию.
         ProcessRunner.Powercfg($"-changename {newGuid} \"{PlanName}\" \"Created by AntiLag-v1\"");
         SetValue(newGuid, SUB_PROCESSOR, PROCTHROTTLEMIN, 100);
         SetValue(newGuid, SUB_PROCESSOR, PROCTHROTTLEMAX, 100);
@@ -72,7 +64,6 @@ public sealed class PowerPlanTweak : ITweak
         SetValue(newGuid, SUB_PCIEXPRESS, ASPM, 0);          // 0 = Off
         SetValue(newGuid, SUB_DISK, DISKIDLE, 0);            // 0 = никогда не выключать
 
-        // 4. Сделать активной.
         ProcessRunner.Powercfg($"-setactive {newGuid}");
     }
 

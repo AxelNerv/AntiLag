@@ -1,4 +1,4 @@
-﻿# Сборка .NET
+# Сборка .NET
 bin/
 obj/
 *.user
@@ -7,6 +7,11 @@ obj/
 .vs/
 *.suo
 
-# Временный файл при подмене запущенного exe
-release/AntiLag.old.exe
-release/*backup*.exe
+# Готовая программа — раздаётся через GitHub Releases, в репозитории не хранится
+release/
+
+# Рабочие материалы: макеты дизайна и исходники курсорных паков
+desing/
+idea/
+icon.png
+Diagnose-Latency.ps1
