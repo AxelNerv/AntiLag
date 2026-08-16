@@ -15,4 +15,9 @@
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Паки курсоров (~220 КБ), распаковываются в %ProgramData% при первом показе -->
+    <EmbeddedResource Include="cursors\*.zip" />
+  </ItemGroup>
+
 </Project>

@@ -41,6 +41,11 @@ public sealed class TweakEngine
             new MouseAccelTweak(),
             new GameModeTweak(),
             new HagsTweak(),
+            // Оформление Windows
+            new ExplorerGalleryTweak(),
+            new ExplorerHomeTweak(),
+            new FileExtensionsTweak(),
+            new ClassicContextMenuTweak(),
         };
     }
 

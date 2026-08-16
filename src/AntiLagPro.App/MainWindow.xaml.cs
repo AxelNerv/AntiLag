@@ -18,6 +18,7 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _uiTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly ObservableCollection<TweakRow> _rows = new();       // базовые (Universal)
     private readonly ObservableCollection<TweakRow> _gameRows = new();   // игровые (Game)
+    private readonly ObservableCollection<TweakRow> _lookRows = new();   // оформление (Appearance)
     private readonly ObservableCollection<FindingRow> _findings = new();
     private readonly ObservableCollection<DnsRow> _dnsRows = new();
     private readonly ObservableCollection<DriverRow> _driverRows = new();
@@ -29,7 +30,7 @@ public partial class MainWindow : Window
     private readonly bool _startHidden = Environment.GetCommandLineArgs()
         .Any(a => string.Equals(a, "--autostart", StringComparison.OrdinalIgnoreCase));
 
-    private IEnumerable<TweakRow> AllRows => _rows.Concat(_gameRows);
+    private IEnumerable<TweakRow> AllRows => _rows.Concat(_gameRows).Concat(_lookRows);
 
     // Статусные цвета — семантика, а не бренд: зелёный/жёлтый/красный остаются.
     private static readonly Brush Green  = new SolidColorBrush(Color.FromRgb(0x22, 0xC5, 0x5E));
@@ -53,6 +54,7 @@ public partial class MainWindow : Window
 
         TweaksItems.ItemsSource = _rows;
         GameTweaksItems.ItemsSource = _gameRows;
+        LookTweaksItems.ItemsSource = _lookRows;
         FindingsItems.ItemsSource = _findings;
         DnsItems.ItemsSource = _dnsRows;
         DriverItems.ItemsSource = _driverRows;
@@ -78,9 +80,169 @@ public partial class MainWindow : Window
         InitTray();
         BuildNav();
         BuildSwatches();
+        LoadCursors();
+        InitGlass();
         ShowVersion();
         _initializing = false;
         _ = CheckUpdatesAsync();
+    }
+
+    // --- Оформление: стеклянный проводник ---
+    private void InitGlass()
+    {
+        int kind = Settings.GlassKind;
+        (kind switch
+        {
+            2 => GlassMica, 3 => GlassAcrylic, 4 => GlassTabbed, 11 => GlassTint, _ => GlassBlur
+        }).IsChecked = true;
+
+        GlassAlphaSlider.Value = Settings.GlassAlpha;
+        GlassAlphaText.Text = AlphaPercent(Settings.GlassAlpha);
+        UpdateGlassColorButton();
+        GlassCheck.IsChecked = Settings.Glass;
+        UpdateGlassRowState();
+        if (Settings.Glass) ApplyGlass();
+    }
+
+    private static string AlphaPercent(double a) => $"{a / 255.0 * 100:N0} %";
+
+    private void UpdateGlassColorButton()
+    {
+        if (Theme.TryParse(Settings.GlassColor, out var c))
+            GlassColorButton.Background = new SolidColorBrush(c);
+    }
+
+    /// <summary>Цвет и прозрачность имеют смысл только для «Размытия» и «Заливки».</summary>
+    private void UpdateGlassRowState()
+    {
+        int kind = Settings.GlassKind;
+        bool custom = kind is 10 or 11;
+        GlassTintRow.IsEnabled = custom;
+        GlassTintRow.Opacity = custom ? 1.0 : 0.45;
+    }
+
+    private void ApplyGlass()
+    {
+        Theme.TryParse(Settings.GlassColor, out var c);
+        GlassEffect.Enable((GlassKind)Settings.GlassKind, c.R, c.G, c.B, (byte)Settings.GlassAlpha);
+    }
+
+    private void Glass_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        Settings.Glass = true;
+        ApplyGlass();
+        if (!GlassEffect.SystemTransparency)
+            GlassHint.Text = "В Windows выключены «Эффекты прозрачности» — без них эффект не виден. Включи их в Параметрах → Персонализация → Цвета.";
+    }
+
+    private void Glass_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing) return;
+        Settings.Glass = false;
+        GlassEffect.Disable();
+    }
+
+    private void GlassKind_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_initializing || sender is not System.Windows.Controls.RadioButton rb) return;
+        if (!int.TryParse(rb.Tag as string, out int kind)) return;
+        Settings.GlassKind = kind;
+        UpdateGlassRowState();
+        if (Settings.Glass) ApplyGlass();
+    }
+
+    private void GlassColor_Click(object sender, RoutedEventArgs e)
+    {
+        Theme.TryParse(Settings.GlassColor, out var cur);
+        var dlg = new ColorPickerWindow(cur) { Owner = this };
+        if (dlg.ShowDialog() != true) return;
+        Settings.GlassColor = Theme.ToHex(dlg.SelectedColor);
+        UpdateGlassColorButton();
+        if (Settings.Glass) ApplyGlass();
+    }
+
+    /// <summary>
+    /// Пока тянут ползунок, эффект применяем с задержкой: обход всех окон
+    /// проводника на каждое движение мыши подвешивал перетаскивание.
+    /// </summary>
+    private DispatcherTimer? _glassDelay;
+
+    private void GlassAlpha_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (GlassAlphaText is null) return;
+        GlassAlphaText.Text = AlphaPercent(e.NewValue);
+        if (_initializing) return;
+
+        Settings.GlassAlpha = (int)e.NewValue;
+        if (!Settings.Glass) return;
+
+        _glassDelay ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(120) };
+        _glassDelay.Tick -= GlassDelayTick;
+        _glassDelay.Tick += GlassDelayTick;
+        _glassDelay.Stop();
+        _glassDelay.Start();
+    }
+
+    private void GlassDelayTick(object? sender, EventArgs e)
+    {
+        _glassDelay?.Stop();
+        ApplyGlass();
+    }
+
+    // --- Оформление: схемы курсоров ---
+    private void LoadCursors()
+    {
+        try
+        {
+            CursorItems.ItemsSource = CursorSchemes.All();
+            string cur = CursorSchemes.Current;
+            CursorStatus.Text = string.IsNullOrWhiteSpace(cur) ? "Сейчас: системные курсоры" : $"Сейчас: {cur}";
+        }
+        catch (Exception ex) { CursorStatus.Text = "Ошибка: " + ex.Message; }
+    }
+
+    private void CursorApply_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as Button)?.Tag is not CursorScheme s) return;
+        try
+        {
+            var backup = BackupStore.Load();
+            CursorSchemes.Apply(s, backup);
+            BackupStore.Save(backup);
+            CursorStatus.Text = $"Сейчас: {s.Name}";
+            CursorStatus.Foreground = Green;
+        }
+        catch (Exception ex)
+        {
+            CursorStatus.Text = "Не вышло: " + ex.Message;
+            CursorStatus.Foreground = Red;
+        }
+    }
+
+    private void CursorRestore_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var backup = BackupStore.Load();
+            CursorSchemes.RestoreSystem(backup);
+            BackupStore.Save(backup);
+            CursorStatus.Text = "Сейчас: системные курсоры";
+            CursorStatus.Foreground = new SolidColorBrush(Color.FromRgb(0xA1, 0xA1, 0xAA));
+        }
+        catch (Exception ex) { CursorStatus.Text = "Не вышло: " + ex.Message; CursorStatus.Foreground = Red; }
+    }
+
+    private void CursorRefresh_Click(object sender, RoutedEventArgs e) => LoadCursors();
+
+    private void CursorFolder_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            System.IO.Directory.CreateDirectory(CursorSchemes.Root);
+            Process.Start(new ProcessStartInfo(CursorSchemes.Root) { UseShellExecute = true });
+        }
+        catch { }
     }
 
     /// <summary>Версия берётся из сборки — правим только csproj, в UI подставляется сама.</summary>
@@ -233,36 +395,36 @@ public partial class MainWindow : Window
         finally { _updateBusy = false; }
     }
 
+    /// <summary>
+    /// Одна кнопка делает всё: качает (если ещё не скачано) и сразу ставит
+    /// с перезапуском. Само нажатие и есть подтверждение — лишних диалогов нет.
+    /// </summary>
     private async void Update_Click(object sender, RoutedEventArgs e)
     {
         if (_update is null || _updateBusy) return;
-
-        // ещё не скачано — качаем по кнопке
-        if (_readyExe is null)
+        UpdateButton.IsEnabled = false;
+        try
         {
-            UpdateButton.IsEnabled = false;
-            bool ok = await DownloadUpdateAsync(silent: false);
-            UpdateButton.IsEnabled = true;
-            if (!ok) return;
-        }
+            if (_readyExe is null && !await DownloadUpdateAsync(silent: false)) return;
 
-        var answer = MessageBox.Show(this,
-            $"Установить обновление v{_update.Latest.ToString(3)}?\n\nПрограмма закроется и запустится заново.",
-            "AntiLag", MessageBoxButton.OKCancel, MessageBoxImage.Question);
-        if (answer != MessageBoxResult.OK) return;
+            UpdateButton.Content = "Установка…";
+            await Task.Delay(150);          // дать кнопке перерисоваться
 
-        if (UpdateChecker.ApplyAndRestart(_readyExe!))
-        {
-            _exiting = true;
-            if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
-            System.Windows.Application.Current.Shutdown();
-        }
-        else
-        {
-            MessageBox.Show(this, "Не удалось заменить файл программы. Скачай новую версию вручную с GitHub.",
+            if (UpdateChecker.ApplyAndRestart(_readyExe!))
+            {
+                _exiting = true;
+                if (_tray is not null) { _tray.Visible = false; _tray.Dispose(); _tray = null; }
+                System.Windows.Application.Current.Shutdown();
+                return;
+            }
+
+            UpdateButton.Content = $"Установить v{_update.Latest.ToString(3)}";
+            MessageBox.Show(this, "Не удалось заменить файл программы — возможно, он открыт из защищённой папки. " +
+                                  "Сейчас откроется страница загрузки.",
                             "AntiLag", MessageBoxButton.OK, MessageBoxImage.Warning);
             try { Process.Start(new ProcessStartInfo(_update.PageUrl) { UseShellExecute = true }); } catch { }
         }
+        finally { UpdateButton.IsEnabled = true; }
     }
 
     private void AutoUpdate_Checked(object sender, RoutedEventArgs e) { if (!_initializing) Settings.AutoUpdate = true; }
@@ -339,10 +501,12 @@ public partial class MainWindow : Window
     {
         _rows.Clear();
         _gameRows.Clear();
+        _lookRows.Clear();
         foreach (var s in _engine.GetStatus())
         {
             var row = new TweakRow(s.Tweak, s.IsApplied);
             if (s.Tweak.Tier == TweakTier.Game) _gameRows.Add(row);
+            else if (s.Tweak.Tier == TweakTier.Appearance) _lookRows.Add(row);
             else _rows.Add(row);
         }
     }
